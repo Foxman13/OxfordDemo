@@ -1,0 +1,142 @@
+﻿<Page
+    x:Class="OxfordDemo.Views.FacesDemoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OxfordDemo.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Page.Resources>
+        
+    </Page.Resources>
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Pivot Grid.Row="1" x:Name="Pivot" SelectionChanged="Pivot_OnSelectionChanged">
+            <PivotItem Header="Detection">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <RadioButton x:Name="TakePhotoRadioButton" GroupName="Mode">Take a photo</RadioButton>
+                        <Button x:Name="TakePhotoButton" Content="Go!" Grid.Row="0" Grid.Column="1" Margin="5" IsEnabled="{Binding ElementName=TakePhotoRadioButton, Path=IsChecked}" Click="takePhotoButton_Click"/>
+
+                        <RadioButton x:Name="SelectPhotoRadioButton" Grid.Row="1" Grid.Column="0" GroupName="Mode" IsChecked="True">Select a photo</RadioButton>
+                        <TextBox x:Name="SelectedPhotoPathTextBox" Grid.Column="1" Grid.Row="1" Margin="5" IsEnabled="{Binding ElementName=SelectPhotoRadioButton, Path=IsChecked}"/>
+                        <Button x:Name="SelectPhotoButton" Grid.Column="2" Margin="5" Grid.Row="1" Click="selectPhotoButton_Click" IsEnabled="{Binding ElementName=SelectPhotoRadioButton, Path=IsChecked}">Browse...</Button>
+
+                        <RadioButton x:Name="UrlPhotoRadioButton" Grid.Row="2" Grid.Column="0" GroupName="Mode">Paste a URL</RadioButton>
+                        <TextBox x:Name="UrlTextBox" Grid.Column="1" Grid.Row="2" Margin="5" IsEnabled="{Binding ElementName=UrlPhotoRadioButton, Path=IsChecked}"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0">
+                            <Button x:Name="DetectButton" Click="detectButton_Click" Margin="5">Detect</Button>
+                            <!--<Button x:Name="IdentifyButton" Click="assignButton_Click" Margin="5">Identify</Button>-->
+                        </StackPanel>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="50">
+                        <Image x:Name="SelectedImage"/>
+                        <Canvas x:Name="PhotoOverlayCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True" IsRightTapEnabled="True">
+                        </Canvas>
+                    </Grid>
+                </Grid>
+            </PivotItem>
+            <PivotItem Header="Persons" x:Name="PersonPivotItem">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Margin="10 10 10 25">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <TextBlock HorizontalAlignment="Center" FontSize="24">Groups</TextBlock>
+                        <ListBox x:Name="GroupsListBox" ItemsSource="{Binding Path=PersonGroups}" DisplayMemberPath="Group.Name" 
+                                 Grid.Row="1" SelectedItem="{Binding Path=SelectedPersonGroupItem, Mode=TwoWay}" SelectionMode="Single"></ListBox>
+                    </Grid>
+                    <Grid Grid.Column="1" Grid.RowSpan="2" Margin="25">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="NewGroupButton" Click="NewGroupButton_OnClick" Margin="5">New Group</Button>
+                            <Button x:Name="RemoveGroupButton" Click="RemoveGroupButton_OnClick" Margin="5" IsEnabled="False">Remove</Button>
+                            <Button x:Name="SaveGroupButton" Click="SaveGroupButton_OnClick"  Margin="5" IsEnabled="False">Save</Button>
+                            <Button x:Name="TrainGroupButton" Click="TrainGroupButton_OnClick"  Margin="5" IsEnabled="False">Train</Button>
+                        </StackPanel>
+                        <Grid Margin="10" Row="1" Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5">Name</TextBlock>
+                            <TextBox Text="{Binding Path=SelectedPersonGroupItem.Group.Name, Mode=TwoWay}" Grid.Row="0"
+                                         Grid.Column="1" Margin="5"></TextBox>
+                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5" Grid.Row="1"
+                                       Grid.Column="0">Id</TextBlock>
+                            <TextBox Text="{Binding Path=SelectedPersonGroupItem.Group.PersonGroupId, Mode=TwoWay}" Grid.Row="1"
+                                         Grid.Column="1" Margin="5"></TextBox>
+                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5" Grid.Row="2"
+                                       Grid.Column="0">User Data</TextBlock>
+                            <TextBox Text="{Binding Path=SelectedPersonGroupItem.Group.UserData, Mode=TwoWay}" Grid.Row="2"
+                                         Grid.Column="1" Margin="5"></TextBox>
+                            <TextBlock Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center" Margin="5">Persons</TextBlock>
+                            <ListBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Path=SelectedPersonGroupItem.Persons}" 
+                                     SelectedItem="{Binding Path=SelectedPerson, Mode=TwoWay}" DisplayMemberPath="Name" VerticalAlignment="Stretch" Margin="5"></ListBox>
+
+                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
+                                <Button x:Name="NewPersonButton" Click="NewPersonButton_OnClick" Margin="5">New Person</Button>
+                                <Button x:Name="RemovePersonButton" Click="RemovePersonButton_OnClick" IsEnabled="False" Margin="5">Remove</Button>
+                                <Button x:Name="SavePersonButton" Click="SavePersonButton_OnClick" IsEnabled="False" Margin="5">Save</Button>
+                            </StackPanel>
+                            <Grid Grid.Row="3" Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Margin="5" VerticalAlignment="Center" HorizontalAlignment="Right">Name</TextBlock>
+                                <TextBox Grid.Row="0" Grid.Column="1" Margin="5" Text="{Binding Path=SelectedPerson.Name, Mode=TwoWay}"></TextBox>
+                                <TextBlock Margin="5" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right">Id</TextBlock>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Margin="5" Text="{Binding Path=SelectedPerson.PersonId}"></TextBlock>
+                                <TextBlock Margin="5" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right">User Data</TextBlock>
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="5" Text="{Binding Path=SelectedPerson.UserData, Mode=TwoWay}"></TextBox>
+                                <TextBlock Margin="5" Grid.Row="3" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Right">Faces</TextBlock>
+                                <ListBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Path=SelectedPerson.FaceIds}" Margin="5"></ListBox>
+                            </Grid>
+                        </Grid>
+
+                    </Grid>
+                </Grid>
+            </PivotItem>
+        </Pivot>
+    </Grid>
+</Page>
