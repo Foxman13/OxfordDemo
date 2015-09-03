@@ -32,16 +32,26 @@ namespace OxfordDemo
         {
             base.OnNavigatedTo(e);
 
-            navigationListBox.SelectedIndex = 0;
+            NavigationListBox.SelectedIndex = 0;
         }
 
         private void navigationListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedItem = e.AddedItems[0] as ListBoxItem;
 
-            if(selectedItem.Name == "faceItem")
+            if(selectedItem != null && selectedItem.Name == "FaceItem")
             {
-                navigationFrame.Navigate(typeof(FacesDemoView));
+                NavigationFrame.Navigate(typeof(FacesDemoView));
+            }
+
+            if (selectedItem != null && selectedItem.Name == "VisionItem")
+            {
+                NavigationFrame.Navigate(typeof(VisionDemoView));
+            }
+
+            if (selectedItem != null && selectedItem.Name == "SpeechItem")
+            {
+                NavigationFrame.Navigate(typeof(SpeechDemoView));
             }
         }
     }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -38,12 +39,10 @@ namespace OxfordDemo.Views
     /// </summary>
     public sealed partial class FacesDemoView : Page, INotifyPropertyChanged
     {
-        private const string ApiKey = "08e96376b43443d1be7aa67684d1c887"; // TODO: insert your Face API key here
-
-        private readonly FaceServiceClient _client = new FaceServiceClient(ApiKey);
+        private readonly FaceServiceClient _client = new FaceServiceClient(Config.FaceApiKey);
 
         private StorageFile _selectedImageFile;
-        private readonly BitmapImage _currentImage = new BitmapImage();
+        private BitmapImage _currentImage = new BitmapImage();
         private bool _isSaveNew = false;
         private DispatcherTimer _trainingTimer = new DispatcherTimer();
 
@@ -62,7 +61,7 @@ namespace OxfordDemo.Views
                     SaveGroupButton.IsEnabled = true;
                     TrainGroupButton.IsEnabled = true;
                 }
-                OnPropertyChanged(nameof(SelectedPersonGroupItem));
+                OnPropertyChanged("SelectedPersonGroupItem");
             }
         }
 
@@ -77,7 +76,7 @@ namespace OxfordDemo.Views
                     RemovePersonButton.IsEnabled = true;
                     SavePersonButton.IsEnabled = true;
                 }
-                OnPropertyChanged(nameof(SelectedPerson));
+                OnPropertyChanged("SelectedPerson");
             }
         }
 
@@ -219,6 +218,7 @@ namespace OxfordDemo.Views
 
         private async Task LoadPersonGroupsAsync()
         {
+            if(PersonGroups.Count > 0)
             PersonGroups.Clear();
 
             var groups = await _client.GetPersonGroupsAsync();
@@ -235,6 +235,7 @@ namespace OxfordDemo.Views
                 catch (ClientException ex)
                 {
                     // hopefully, this means the groupId had no entries for training
+                    Debug.WriteLine(ex.Message);
                 }
                 finally
                 {
@@ -247,11 +248,22 @@ namespace OxfordDemo.Views
 
         private async Task LoadPersons(PersonGroupItem groupItem)
         {
-            var persons = await GetPersonsAsync(groupItem.Group.PersonGroupId);
-            foreach (var person in persons)
+            if(groupItem.Persons.Count > 0)
+                groupItem.Persons.Clear();
+
+            try
             {
-                groupItem.Persons.Add(person);
+                var persons = await GetPersonsAsync(groupItem.Group.PersonGroupId);
+                foreach (var person in persons)
+                {
+                    groupItem.Persons.Add(person);
+                }
             }
+            catch (ClientException ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+
         }
 
 
@@ -299,26 +311,40 @@ namespace OxfordDemo.Views
             {
                 if (groupItem.LastTrained.Year > 2000)
                 {
-                    var results = await _client.IdentifyAsync(groupItem.Group.PersonGroupId, new Guid[] { face.FaceId });
-                    if (results != null && results.Length > 0)
+                    try
                     {
-                        foreach (var res in results)
+                        var results =
+                            await _client.IdentifyAsync(groupItem.Group.PersonGroupId, new Guid[] {face.FaceId});
+                        if (results != null && results.Length > 0)
                         {
-                            foreach (var candidate in res.Candidates)
+                            foreach (var res in results)
                             {
-                                if (candidate.Confidence > 0.8)
+                                foreach (var candidate in res.Candidates)
                                 {
-                                    foreach (var pg in PersonGroups)
+                                    if (candidate.Confidence > 0.8)
                                     {
-                                        if (pg.Persons.Any(p => p.PersonId == candidate.PersonId))
+                                        foreach (var pg in PersonGroups)
                                         {
-                                            result = pg.Persons.First(p => p.PersonId == candidate.PersonId);
+                                            if (pg.Persons.Any(p => p.PersonId == candidate.PersonId))
+                                            {
+                                                result = pg.Persons.First(p => p.PersonId == candidate.PersonId);
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    catch (ClientException ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+
+                }
+                else
+                {
+                    MessageDialog dialog = new MessageDialog(string.Format("The person group, {0}, has not been trained", groupItem.Group.Name));
+                    await dialog.ShowAsync();
                 }
             }
             return result;
@@ -373,8 +399,10 @@ namespace OxfordDemo.Views
 
                 if (result)
                 {
-                    _currentImage.UriSource = uri;
-                    SelectedImage.Source = _currentImage;
+                    var bitmap = new BitmapImage();
+                    bitmap.UriSource = uri;
+                    _currentImage = bitmap;
+                    SelectedImage.Source = bitmap;
                     faces = await DetectFacesInUrlAsync(uri.OriginalString);
                 }
 
@@ -413,7 +441,7 @@ namespace OxfordDemo.Views
         private async void takePhotoButton_Click(object sender, RoutedEventArgs e)
         {
             ResetFaceDetectionOverlay();
-            CameraCaptureUI capture = new CameraCaptureUI();
+            var capture = new CameraCaptureUI();
             capture.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Jpeg;
             capture.PhotoSettings.CroppedSizeInPixels = new Size(1280, 720);
             var photo = await capture.CaptureFileAsync(CameraCaptureUIMode.Photo);

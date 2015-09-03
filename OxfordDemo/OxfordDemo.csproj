@@ -99,6 +99,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Config-dev.cs" />
     <Compile Include="DelegateCommand.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
@@ -109,8 +110,11 @@
     <Compile Include="Views\FacesDemoView.xaml.cs">
       <DependentUpon>FacesDemoView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\HomeView.xaml.cs">
-      <DependentUpon>HomeView.xaml</DependentUpon>
+    <Compile Include="Views\SpeechDemoView.xaml.cs">
+      <DependentUpon>SpeechDemoView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\VisionDemoView.xaml.cs">
+      <DependentUpon>VisionDemoView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -142,7 +146,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\HomeView.xaml">
+    <Page Include="Views\SpeechDemoView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\VisionDemoView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -151,6 +159,10 @@
     <ProjectReference Include="..\ClientLibrary\ClientLibrary.csproj">
       <Project>{34daa01d-3f6b-4622-9425-726b0b4a6c78}</Project>
       <Name>ClientLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VisionClientLibrary\Microsoft.ProjectOxford.Vision.csproj">
+      <Project>{555d2260-8472-476a-8619-3654367c4db0}</Project>
+      <Name>Microsoft.ProjectOxford.Vision</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

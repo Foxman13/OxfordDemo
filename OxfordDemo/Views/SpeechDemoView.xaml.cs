@@ -20,9 +20,9 @@ namespace OxfordDemo.Views
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class HomeView : Page
+    public sealed partial class SpeechDemoView : Page
     {
-        public HomeView()
+        public SpeechDemoView()
         {
             this.InitializeComponent();
         }

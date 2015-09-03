@@ -12,11 +12,12 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <ListBox x:Name="navigationListBox" SelectionMode="Single" SelectionChanged="navigationListBox_SelectionChanged">
-            <ListBoxItem x:Name="faceItem">Face</ListBoxItem>
-            <ListBoxItem x:Name="speechItem">Speech</ListBoxItem>
+        <ListBox x:Name="NavigationListBox" SelectionMode="Single" SelectionChanged="navigationListBox_SelectionChanged">
+            <ListBoxItem x:Name="FaceItem">Face</ListBoxItem>
+            <ListBoxItem x:Name="VisionItem">Vision</ListBoxItem>
+            <ListBoxItem x:Name="SpeechItem">Speech</ListBoxItem>
         </ListBox>
-        <Frame x:Name="navigationFrame" Grid.Column="1">
+        <Frame x:Name="NavigationFrame" Grid.Column="1">
             
         </Frame>
     </Grid>

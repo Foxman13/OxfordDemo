@@ -1,5 +1,5 @@
 ﻿<Page
-    x:Class="OxfordDemo.Views.HomeView"
+    x:Class="OxfordDemo.Views.SpeechDemoView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OxfordDemo.Views"
@@ -8,6 +8,10 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
+        <Pivot>
+            <PivotItem Header="Recognition" x:Name="SpeechRecogntionItem">
+                
+            </PivotItem>
+        </Pivot>
     </Grid>
 </Page>
