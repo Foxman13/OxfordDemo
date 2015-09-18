@@ -189,19 +189,9 @@ namespace VisionAPI
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        [NotifyPropertyChangedInvocator]
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-        private void ThumbnailsButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    internal class NotifyPropertyChangedInvocatorAttribute : Attribute
-    {
     }
 }
