@@ -99,7 +99,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Config.cs" />
+    <Compile Include="Config-dev.cs" />
     <Compile Include="FacesPage.xaml.cs">
       <DependentUpon>FacesPage.xaml</DependentUpon>
     </Compile>

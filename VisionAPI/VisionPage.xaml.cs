@@ -78,10 +78,6 @@ namespace VisionAPI
             this.InitializeComponent();
         }
 
-        private void ProcessThumbnail(Byte[] data)
-        {
-            
-        }
 
         private async void selectPhotoButton_Click(object sender, RoutedEventArgs e)
         {
@@ -119,9 +115,7 @@ namespace VisionAPI
                         OcrImage.Source = _currentImage;
                     }
                     AnalyzeButton.IsEnabled = true;
-                }
-
-               
+                }             
             }
         }
 
@@ -131,59 +125,44 @@ namespace VisionAPI
 
             if (pivotItem != null)
             {
-                if (pivotItem.Name == "AnalysisItem")
+                if (pivotItem == AnalysisItem)
                 {
                     if (_selectedImageFile != null)
                     {
-                        var result = await _serviceClient.AnalyzeImageAsync(await _selectedImageFile.OpenStreamForReadAsync());
-                        if (result != null)
+                        using (var stream = await _selectedImageFile.OpenStreamForReadAsync())
                         {
-                            AnalysisResult = result;
-                            AnalysisListBox.ItemsSource = result.Categories;
-                        }
-
-                    }
-                }
-                if (pivotItem.Name == "OCRItem")
-                {
-                    if (_selectedImageFile != null)
-                    {
-                        var result = await _serviceClient.RecognizeTextAsync(await _selectedImageFile.OpenStreamForReadAsync());
-                        OcrResult = result;
-                        foreach (var region in OcrResult.Regions)
-                        {
-                            foreach (var line in region.Lines)
+                            var result = await _serviceClient.AnalyzeImageAsync(stream);
+                            if (result != null)
                             {
-                                foreach (var word in line.Words)
-                                {
-                                    OcrResultsTextBox.Text += word.Text;
-                                    OcrResultsTextBox.Text += ' ';
-                                }
+                                AnalysisResult = result;
+                                AnalysisListBox.ItemsSource = result.Categories;
                             }
                         }
                     }
                 }
-            }
-        }
-
-        private async void takePhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            var capture = new CameraCaptureUI();
-            capture.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Jpeg;
-            capture.PhotoSettings.CroppedSizeInPixels = new Size(1280, 720);
-            var photo = await capture.CaptureFileAsync(CameraCaptureUIMode.Photo);
-
-            if (photo != null)
-            {
-                _selectedImageFile = photo;
-                SelectedPhotoPathTextBox.Text = photo.Path;
-                using (var stream = await photo.OpenAsync(FileAccessMode.Read))
+                if (pivotItem == OcrItem)
                 {
-                    await _currentImage.SetSourceAsync(stream);
+                    if (_selectedImageFile != null)
+                    {
+                        using (var stream = await _selectedImageFile.OpenStreamForReadAsync())
+                        {
+                            var result = await _serviceClient.RecognizeTextAsync(stream);
+                            OcrResult = result;
+                            foreach (var region in OcrResult.Regions)
+                            {
+                                foreach (var line in region.Lines)
+                                {
+                                    foreach (var word in line.Words)
+                                    {
+                                        OcrResultsTextBox.Text += word.Text;
+                                        OcrResultsTextBox.Text += ' ';
+                                    }
+                                }
+                            }
+                        }
 
+                    }
                 }
-
-                AnalysisImage.Source = _currentImage;
             }
         }
 
