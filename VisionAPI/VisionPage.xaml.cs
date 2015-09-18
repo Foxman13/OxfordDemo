@@ -1,49 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.ProjectOxford.Vision;
+using Microsoft.ProjectOxford.Vision.Contract;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Media.Capture;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.UI.Xaml.Navigation;
-using Microsoft.ProjectOxford.Vision;
-using Microsoft.ProjectOxford.Vision.Contract;
-using OxfordDemo.Annotations;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-namespace OxfordDemo.Views
+namespace VisionAPI
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class VisionDemoView : Page, INotifyPropertyChanged
+    public sealed partial class VisionPage : Page, INotifyPropertyChanged
     {
-        private VisionServiceClient _serviceClient = new VisionServiceClient(Config.VisionApiKey);
+        private readonly VisionServiceClient _serviceClient = new VisionServiceClient(Config.VisionApiKey);
 
         private StorageFile _selectedImageFile;
         private BitmapImage _currentImage = new BitmapImage();
 
-        private ObservableCollection<BitmapImage> _thumbnails = new ObservableCollection<BitmapImage>();
-
-        public ObservableCollection<BitmapImage> Thumbnails
+        public BitmapImage CurrentImage
         {
-            get { return _thumbnails; }
+            get { return _currentImage; }
+            set
+            {
+                if (value != _currentImage)
+                {
+                    _currentImage = value;
+                    OnPropertyChanged(nameof(CurrentImage));
+                }
+            }
         }
+
+        public ObservableCollection<BitmapImage> Thumbnails { get; } = new ObservableCollection<BitmapImage>();
 
         private AnalysisResult _analysisResult;
 
@@ -75,7 +73,7 @@ namespace OxfordDemo.Views
             }
         }
 
-        public VisionDemoView()
+        public VisionPage()
         {
             this.InitializeComponent();
         }
@@ -100,6 +98,7 @@ namespace OxfordDemo.Views
                 SelectedPhotoPathTextBox.Text = file.Path;
                 using (var stream = await file.OpenAsync(FileAccessMode.Read))
                 {
+                    _currentImage = new BitmapImage();
                     await _currentImage.SetSourceAsync(stream);
 
                 }
@@ -111,7 +110,14 @@ namespace OxfordDemo.Views
                 }
                 else
                 {
-                    SelectedImage.Source = _currentImage;
+                    if (Pivot.SelectedItem == AnalysisItem)
+                    {
+                        AnalysisImage.Source = _currentImage;
+                    }
+                    if (Pivot.SelectedItem == OcrItem)
+                    {
+                        OcrImage.Source = _currentImage;
+                    }
                     AnalyzeButton.IsEnabled = true;
                 }
 
@@ -130,15 +136,12 @@ namespace OxfordDemo.Views
                     if (_selectedImageFile != null)
                     {
                         var result = await _serviceClient.AnalyzeImageAsync(await _selectedImageFile.OpenStreamForReadAsync());
-                        AnalysisResult = result;
-                    }
-                }
-                if (pivotItem.Name == "ThumbnailsItem")
-                {
-                    if (_selectedImageFile != null)
-                    {
-                        var result = await _serviceClient.GetThumbnailAsync(await _selectedImageFile.OpenStreamForReadAsync(), 300, 300);
-                        ProcessThumbnail(result);
+                        if (result != null)
+                        {
+                            AnalysisResult = result;
+                            AnalysisListBox.ItemsSource = result.Categories;
+                        }
+
                     }
                 }
                 if (pivotItem.Name == "OCRItem")
@@ -147,6 +150,17 @@ namespace OxfordDemo.Views
                     {
                         var result = await _serviceClient.RecognizeTextAsync(await _selectedImageFile.OpenStreamForReadAsync());
                         OcrResult = result;
+                        foreach (var region in OcrResult.Regions)
+                        {
+                            foreach (var line in region.Lines)
+                            {
+                                foreach (var word in line.Words)
+                                {
+                                    OcrResultsTextBox.Text += word.Text;
+                                    OcrResultsTextBox.Text += ' ';
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -169,7 +183,7 @@ namespace OxfordDemo.Views
 
                 }
 
-                SelectedImage.Source = _currentImage;
+                AnalysisImage.Source = _currentImage;
             }
         }
 
@@ -180,5 +194,14 @@ namespace OxfordDemo.Views
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        private void ThumbnailsButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal class NotifyPropertyChangedInvocatorAttribute : Attribute
+    {
     }
 }

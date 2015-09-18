@@ -1,6 +1,4 @@
-﻿using Microsoft.ProjectOxford.Face;
-using Microsoft.ProjectOxford.Face.Contract;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,10 +6,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Media.Capture;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -19,25 +15,22 @@ using Windows.UI;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
-using OxfordDemo.Annotations;
-using OxfordDemo.Model;
-using System.Windows.Input;
+using FaceAPI.Model;
+using Microsoft.ProjectOxford.Face;
+using Microsoft.ProjectOxford.Face.Contract;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
-namespace OxfordDemo.Views
+namespace FaceAPI
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class FacesDemoView : Page, INotifyPropertyChanged
+    public sealed partial class FacesPage : Page, INotifyPropertyChanged
     {
         private readonly FaceServiceClient _client = new FaceServiceClient(Config.FaceApiKey);
 
@@ -45,6 +38,12 @@ namespace OxfordDemo.Views
         private BitmapImage _currentImage = new BitmapImage();
         private bool _isSaveNew = false;
         private DispatcherTimer _trainingTimer = new DispatcherTimer();
+
+        private TimeSpan _groupRequestRateInterval = TimeSpan.FromSeconds(60);
+        private DateTime _lastGroupRequestTime;
+
+        private TimeSpan _personRequestRateInterval = TimeSpan.FromSeconds(60);
+        private DateTime _lastPersonRequestTime;
 
         public ObservableCollection<PersonGroupItem> PersonGroups { get; } = new ObservableCollection<PersonGroupItem>();
 
@@ -80,7 +79,7 @@ namespace OxfordDemo.Views
             }
         }
 
-        public FacesDemoView()
+        public FacesPage()
         {
             this.InitializeComponent();
             DataContext = this;
@@ -93,10 +92,13 @@ namespace OxfordDemo.Views
         {
             if (SelectedPersonGroupItem != null)
             {
-                var status = await _client.GetPersonGroupTrainingStatusAsync(SelectedPersonGroupItem.Group.PersonGroupId);
-                if (status.Status == "suceeded")
+                if (SelectedPersonGroupItem.IsTraining)
                 {
-                    
+                    var status = await _client.GetPersonGroupTrainingStatusAsync(SelectedPersonGroupItem.Group.PersonGroupId);
+                    if (status.Status == "suceeded")
+                    {
+                        SelectedPersonGroupItem.IsTraining = false;
+                    }
                 }
             }
         }
@@ -286,22 +288,64 @@ namespace OxfordDemo.Views
 
         private async Task CreatePersonGroupAsync(PersonGroup group)
         {
-            await _client.CreatePersonGroupAsync(group.PersonGroupId, group.Name, group.UserData);
+            if (await CheckGroupRequestRate())
+            {
+                _lastGroupRequestTime = DateTime.Now;
+                try
+                {
+                    await _client.CreatePersonGroupAsync(group.PersonGroupId, group.Name, group.UserData);
+                }
+                catch (ClientException ce)
+                {
+                    Debug.WriteLine(ce.Message);
+                }
+            }
         }
 
         private async Task DeletePersonGroupAsync(string groupId)
         {
-            await _client.DeletePersonGroupAsync(groupId);
+            if (await CheckGroupRequestRate())
+            {
+                _lastGroupRequestTime = DateTime.Now;
+                try
+                {
+                    await _client.DeletePersonGroupAsync(groupId);
+                }
+                catch (ClientException ce)
+                {
+                    Debug.WriteLine(ce.Message);
+                }
+            }
         }
 
         private async Task UpdatePersonGroupAsync(PersonGroup group)
         {
-            await _client.UpdatePersonGroupAsync(group.PersonGroupId, group.Name, group.UserData);
+            if (await CheckGroupRequestRate())
+            {
+                _lastGroupRequestTime = DateTime.Now;
+                try
+                {
+                    await _client.UpdatePersonGroupAsync(group.PersonGroupId, group.Name, group.UserData);
+                }
+                catch (ClientException ce)
+                {
+                    Debug.WriteLine(ce.Message);
+                }
+            } 
         }
 
-        private async Task AddPersonFaceAsync(string groupId, Guid personId, Guid faceId)
+        private async Task AddPersonFaceAsync(PersonGroupItem groupItem, Guid personId, Guid faceId)
         {
-            await _client.AddPersonFaceAsync(groupId, personId, faceId);
+            try
+            {
+                await _client.AddPersonFaceAsync(groupItem.Group.PersonGroupId, personId, faceId);
+                await LoadPersons(groupItem);
+                await TrainPersonGroup(groupItem);
+            }
+            catch (ClientException ce)
+            {
+                Debug.WriteLine(ce.Message);
+            }
         }
 
         private async Task<Person> IdentifyPersonAsync(Face face)
@@ -343,8 +387,11 @@ namespace OxfordDemo.Views
                 }
                 else
                 {
-                    MessageDialog dialog = new MessageDialog(string.Format("The person group, {0}, has not been trained", groupItem.Group.Name));
-                    await dialog.ShowAsync();
+                    if (!groupItem.IsTraining)
+                    {
+                        MessageDialog dialog = new MessageDialog(string.Format("The person group, {0}, has not been trained", groupItem.Group.Name));
+                        await dialog.ShowAsync();
+                    }
                 }
             }
             return result;
@@ -374,7 +421,7 @@ namespace OxfordDemo.Views
                 {
                     var groupItem = PersonGroups.First(g => g.Persons.Contains(person));
                     if(groupItem != null)
-                        await AddPersonFaceAsync(groupItem.Group.PersonGroupId, person.PersonId, face.FaceId);
+                        await AddPersonFaceAsync(groupItem, person.PersonId, face.FaceId);
                 }
                     
             }
@@ -483,6 +530,20 @@ namespace OxfordDemo.Views
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private async Task<bool> CheckGroupRequestRate()
+        {
+            bool result = false;
+
+            result =  DateTime.Now - _lastGroupRequestTime > _groupRequestRateInterval;
+            if (!result)
+            {
+                MessageDialog dialog = new MessageDialog(string.Format("You must wait {0} more seconds to submit a request", (DateTime.Now - _lastGroupRequestTime).Seconds));
+                await dialog.ShowAsync();
+            }
+
+            return result;
+        }
+
         private void NewGroupButton_OnClick(object sender, RoutedEventArgs e)
         {
             var groupItem = new PersonGroupItem() {Group = new PersonGroup()};
@@ -505,13 +566,14 @@ namespace OxfordDemo.Views
                 {
                     await CreatePersonGroupAsync(SelectedPersonGroupItem.Group);
                     PersonGroups.Add((SelectedPersonGroupItem));
+                    _isSaveNew = false;
                 }
                 else
                 {
                     await UpdatePersonGroupAsync(SelectedPersonGroupItem.Group);
                     await LoadPersonGroupsAsync();
                 }
-                _isSaveNew = false;
+                
             }
         }
 
@@ -556,13 +618,33 @@ namespace OxfordDemo.Views
                 
         }
 
+        private async Task TrainPersonGroup(PersonGroupItem groupItem)
+        {
+            if (groupItem != null)
+            {
+                try
+                {
+                    await _client.TrainPersonGroupAsync((groupItem.Group.PersonGroupId));
+                    groupItem.IsTraining = true;
+                    _trainingTimer.Start();
+                }
+                catch (ClientException ce)
+                {
+                    Debug.WriteLine(ce.Message);
+                }
+            }
+        }
+
         private async void TrainGroupButton_OnClick(object sender, RoutedEventArgs e)
         {
             if (SelectedPersonGroupItem != null)
             {
-                await _client.TrainPersonGroupAsync((SelectedPersonGroupItem.Group.PersonGroupId));
-                _trainingTimer.Start();
+                await TrainPersonGroup(SelectedPersonGroupItem);
             }
         }
+    }
+
+    internal class NotifyPropertyChangedInvocatorAttribute : Attribute
+    {
     }
 }

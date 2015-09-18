@@ -1,17 +1,15 @@
-﻿using Microsoft.ProjectOxford.Face.Contract;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.ProjectOxford.Face.Contract;
 
-namespace OxfordDemo.Model
+namespace FaceAPI.Model
 {
     public class PersonGroupItem
     {
         public PersonGroup Group { get; set; }
         public ObservableCollection<Person> Persons { get; } = new ObservableCollection<Person>();
         public DateTime LastTrained { get; set; }
+        public bool IsTraining { get; set; }
+        public bool NeedsTraining { get; set; }
     }
 }
